@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from available_schemas import available_functions
+from call_function import call_function
 
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -39,6 +40,7 @@ config=types.GenerateContentConfig(
     tools=[available_functions], system_instruction=system_prompt
 )
 
+response_list = []
 
 # Model call
 client = genai.Client(api_key=api_key)
@@ -52,14 +54,24 @@ response = client.models.generate_content(
 if response.usage_metadata is None:
     raise RuntimeError("No response retrieved.")
 
-if args.verbose:
-    print(f"User prompt: {args.user_prompt}")
-    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-    print(response.text)
+
+if response.function_calls is not None:
+    for function_call in response.function_calls:
+        function_call_result = call_function(function_call)
+
+        if not function_call_result.parts:
+            raise Exception("No parts in function call")
+
+        if function_call_result.parts[0].function_response is None:
+            raise Exception("No FunctionResponse object")
+        
+        if function_call_result.parts[0].function_response.response is None:
+            raise Exception("No result from AI call")
+        
+        response_list.append(function_call_result.parts[0])
+
+        if args.verbose:
+            print(f"-> {function_call_result.parts[0].function_response.response}")
+        
 else:
-    if response.function_calls is not None:
-        for function_call in response.function_calls:
-            print(f"Calling function: {function_call.name}({function_call.args})")
-    else:
-        print(response.text)
+    print(response.text)
