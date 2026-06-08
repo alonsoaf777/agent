@@ -7,6 +7,7 @@ A set of tools are providad with basic security checks.
 ### How to run:
 - Make sure to have a .env file with your API key.
 - If you are using uv for project management run:
+  
 ´´´
 uv run main.py "Explain your task" --[verbose]
 ´´´
