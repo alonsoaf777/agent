@@ -2,7 +2,7 @@
 
 Simple architecture of a coding agent that works inside calculator app using *gemini-2.5-flash*.
 
-A set of tools are providad with basic security checks. 
+A set of tools that allows the agent to read/write files are provided with basic security checks. 
 
 ### How to run:
 - Make sure to have a .env file with your API key.
@@ -13,3 +13,5 @@ uv run main.py "Explain your task" --[verbose]
 ```
 
 "--verbose" flag allows you to see in depth analysis of the agent.
+
+- Change "Explain your task" to your actual instrucion.
