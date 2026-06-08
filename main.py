@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 from dotenv import load_dotenv
 from google import genai
@@ -45,33 +46,41 @@ response_list = []
 # Model call
 client = genai.Client(api_key=api_key)
 
-response = client.models.generate_content(
-    model='gemini-2.5-flash',
-    contents=messages,
-    config=config,
-)
+for _ in range(20):
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=messages,
+        config=config,
+    )
 
-if response.usage_metadata is None:
-    raise RuntimeError("No response retrieved.")
+    if response.usage_metadata is None:
+        raise RuntimeError("No response retrieved.")
 
+    for candidate in response.candidates:
+        messages.append(candidate)
 
-if response.function_calls is not None:
-    for function_call in response.function_calls:
-        function_call_result = call_function(function_call)
+    if response.function_calls is not None:
+        for function_call in response.function_calls:
+            function_call_result = call_function(function_call)
 
-        if not function_call_result.parts:
-            raise Exception("No parts in function call")
+            if not function_call_result.parts:
+                raise Exception("No parts in function call")
 
-        if function_call_result.parts[0].function_response is None:
-            raise Exception("No FunctionResponse object")
-        
-        if function_call_result.parts[0].function_response.response is None:
-            raise Exception("No result from AI call")
-        
-        response_list.append(function_call_result.parts[0])
+            if function_call_result.parts[0].function_response is None:
+                raise Exception("No FunctionResponse object")
+            
+            if function_call_result.parts[0].function_response.response is None:
+                raise Exception("No result from AI call")
+            
+            response_list.append(function_call_result.parts[0])
 
-        if args.verbose:
-            print(f"-> {function_call_result.parts[0].function_response.response}")
-        
-else:
-    print(response.text)
+            if args.verbose:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
+            
+            messages.append(types.Content(role="user", parts=response_list))
+    else:
+        print(response.text)
+        sys.exit(0)
+
+print("Agent didn't resolve in default iterations.")
+sys.exit(1)
